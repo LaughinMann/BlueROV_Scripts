@@ -1,11 +1,11 @@
 import time
-# Import mavutil
+# Import mavutil test
 from pymavlink import mavutil
 
 
 def wait_conn():
     """
-    Sends a ping to establish the UDP communication and awaits for a response
+    Sends a ping to stabilish the UDP communication and awaits for a response
     """
     msg = None
     while not msg:
@@ -16,66 +16,90 @@ def wait_conn():
             0  # Request ping of all components
         )
         msg = master.recv_match()
-        time.sleep(0.5)
+    time.sleep(0.5)
 
 
-def request_message_interval(message_id: int, frequency_hz: float):
+def request_message_interval(master, message_input, frequency_hz):
     """
-    Request MAVLink message in a desired frequency
-
-    Args:
-        message_id (int): MAVLink message ID, use mavutil.mavlink.MAVLINK_MSG_ID_***.
-        frequency_hz (float): Desired frequency in Hz as a float
+    Set request interval for specific messages
     """
+    message_name = "MAVLINK_MSG_ID_" + message_input
+    message_id = getattr(mavutil.mavlink, message_name)
     master.mav.command_long_send(
         master.target_system, master.target_component,
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
-        message_id,  # The MAVLink message ID
-        1e6 / frequency_hz,  # The interval between two messages in microseconds. Set to -1 to disable and 0 to
-        # request default rate.
-        0, 0, 0, 0,  # Unused parameters
-        0,  # Target address of message stream (if message has target address fields). 0: Flight-stack default (
-        # recommended), 1: address of requestor, 2: broadcast.
-    )
+        message_id,
+        1e6 / frequency_hz,
+        0,
+        0, 0, 0, 0)
+
+
+def send_file_to_modem():
+    pass
 
 
 # Create the connection
-# Companion is already configured to allow script connections under the port 9000
+#  Companion is already configured to allow script connections under the port 9000
 # Note: The connection is done with 'udpout' and not 'udpin'.
-# You can check in http:192.168.1.2:2770/mavproxy that the communication made for 9000
-# uses a 'udp' (server) and not 'udpout' (client).
+#  You can check in http:192.168.1.2:2770/mavproxy that the communication made for 9000
+#  uses a 'udp' (server) and not 'udpout' (client).
 master = mavutil.mavlink_connection('udpout:0.0.0.0:9000')
 
 # Send a ping to start connection and wait for any reply.
-# This function is necessary when using 'udpout',
-# as described before, 'udpout' connects to 'udpin',
-# and needs to send something to allow 'udpin' to start
-# sending data.
+#  This function is necessary when using 'udpout',
+#  as described before, 'udpout' connects to 'udpin',
+#  and needs to send something to allow 'udpin' to start
+#  sending data.
 wait_conn()
 
-# Configure HEARTBEAT message to be sent at 1Hz
-request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_HEARTBEAT, 1)
+# Set frequency of the messages to recieve
+request_message_interval(master, "HEARTBEAT", 1)
+request_message_interval(master, "SYS_STATUS", 2)
 
-# Configure SYS_STATUS message to be sent at 2Hz
-request_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_SYS_STATUS, 2)
+# open output file, or create one if it somehow does not exist
+heartbeat_wrote_to_file = False
+sys_status_wrote_to_file = False
 
-# Loop to collect information
+# Get some information!
 while True:
-    msg = master.recv_match(type="HEARTBEAT")
-    
-    if not msg:
-        continue
-
+    # open file
     output_file = open("message_data.txt", "w")
-    print(msg)
-    
-    output_file.write(msg)
-    output_file.close()
-    
-    master.mav.heartbeat_send(
-        12,
-        3,
-        81,
-        0, 0)
-    
-    time.sleep(0.1)
+
+    while heartbeat_wrote_to_file == False and sys_status_wrote_to_file == False:
+        # filter out the messages we want
+        heartbeat_msg = master.recv_match(type="HEARTBEAT")
+        sys_status_msg = master.recv_match(type="SYS_STATUS")
+
+        # if the message is not a heartbeat or sys_status ignore and continue loop
+        if not heartbeat_msg and not sys_status_msg:
+            continue
+
+            # Make sure no None types are printed
+            if (heartbeat_msg != None):
+                print(heartbeat_msg.to_dict())
+            output_file.writelines("{}".format(heartbeat_msg.to_dict()))
+            heartbeat_wrote_to_file = True
+            if (sys_status_msg != None):
+                print(sys_status_msg.to_dict())
+            output_file.writelines("{}".format(sys_status_msg.to_dict()))
+            sys_status_wrote_to_file = True
+
+            # close file
+            output_file.close()
+
+            # send file to modem
+            print("TEST: Send data to modem")
+            # example reset to send another message
+            heartbeat_wrote_to_file = False
+            sys_status_wrote_to_file = False
+
+            # Send a ping to the BlueROV to make sure it knows we're still here
+            master.mav.ping_send(
+                int(time.time() * 1e6),
+                0,
+                0,
+                0
+            )
+
+    # Sleep for 0.1 seconds
+    time.sleep(1)
