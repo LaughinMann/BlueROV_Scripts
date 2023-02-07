@@ -8,7 +8,7 @@ from pymavlink import mavutil
 
 def wait_conn():
     """
-    Sends a ping to stabilish the UDP communication and awaits for a response
+    Sends a ping to establish the UDP communication and awaits for a response
     """
     msg = None
     while not msg:
@@ -45,10 +45,13 @@ def send_ping():
 
 
 def send_file_to_modem():
+    """
+    Package and send the message_data.txt file
+    """
     # Compress the data file first
     compress_file()
     # generate a hash for the file
-    gzip_data_file_hash = generate_md5()
+    gzip_data_file_hash = get_data_file_hash()
     # TODO: Remove after testing hash.
     print(gzip_data_file_hash)
     # send file to modem
@@ -57,15 +60,18 @@ def send_file_to_modem():
         with gzip.open("message_data.txt.gz", "rb") as data_file:
             data = data_file.read()
         # establish connection to modem
-        modem_serial = serial.Serial("CHANGE_ME_TO_MODEM_PORT", baudrate=11520)
+        modem_serial = serial.Serial("CHANGE_ME_TO_MODEM_PORT", baudrate=115200)
         # let the modem know we are sending a file
         modem_serial.write(data)
         modem_serial.close()
     except serial.serialutil.SerialException:
-        print("ERROR: The Modem Serial port not found. Ensure modem is connected and on.")
+        print("ERROR: The Modem Serial port not found. Ensure modem is connected and powered on.")
 
 
-def generate_md5():
+def get_data_file_hash():
+    """
+    Gets the MD5 hash of the message_data.txt file
+    """
     try:
         return hashlib.md5(open("message_data.txt.gz", "rb").read()).hexdigest()
     except FileNotFoundError:
@@ -73,6 +79,9 @@ def generate_md5():
 
 
 def compress_file():
+    """
+    Compresses the message_data.txt file to gzip format.
+    """
     try:
         data_file = open("message_data.txt", "rb")
         with gzip.open("message_data.txt.gz", "wb") as data_file_compressed:
@@ -117,11 +126,11 @@ while True:
             continue
 
             # Make sure no None types are printed
-            if (heartbeat_msg != None and not heartbeat_wrote_to_file):
+            if heartbeat_msg != None and not heartbeat_wrote_to_file:
                 print(heartbeat_msg.to_dict())
                 output_file.writelines("{}".format(heartbeat_msg.to_dict()))
                 heartbeat_wrote_to_file = True
-            if (sys_status_msg != None and not sys_status_wrote_to_file):
+            if sys_status_msg != None and not sys_status_wrote_to_file:
                 print(sys_status_msg.to_dict())
                 output_file.writelines("{}".format(sys_status_msg.to_dict()))
                 sys_status_wrote_to_file = True
@@ -140,5 +149,5 @@ while True:
 
     # Send a ping to the BlueROV to make sure it knows we're still here
     send_ping()
-    # Sleep for 0.1 seconds
+    # Sleep for 1 second
     time.sleep(1)
