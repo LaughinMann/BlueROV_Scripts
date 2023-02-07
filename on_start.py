@@ -52,8 +52,6 @@ def send_file_to_modem():
     compress_file()
     # generate a hash for the file
     gzip_data_file_hash = get_data_file_hash()
-    # TODO: Remove after testing hash.
-    print(gzip_data_file_hash)
     # send file to modem
     try:
         # open the gzip file
@@ -61,8 +59,11 @@ def send_file_to_modem():
             data = data_file.read()
         # establish connection to modem
         modem_serial = serial.Serial("CHANGE_ME_TO_MODEM_PORT", baudrate=115200)
-        # let the modem know we are sending a file
+        # first send the hash of the file that we will soon recieve
+        modem_serial.serial.write(gzip_data_file_hash)
+        # write the message_data.txt.gz file to the modem
         modem_serial.write(data)
+        # close the modem serial connection
         modem_serial.close()
     except serial.serialutil.SerialException:
         print("ERROR: The Modem Serial port not found. Ensure modem is connected and powered on.")
