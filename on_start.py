@@ -61,15 +61,15 @@ def send_file_to_modem():
         modem_serial = serial.Serial("CHANGE_ME_TO_MODEM_PORT", baudrate=115200)
         # first send the hash of the file that we will soon receive
         modem_serial.write("<<TRANSFER_START>>")
-        time.sleep(0.01);
+        time.sleep(0.01)
         modem_serial.write(gzip_data_file_hash)
-        time.sleep(0.01);
+        time.sleep(0.01)
         # write the message_data.txt.gz file to the modem
         modem_serial.write(data)
-        time.sleep(0.01);
+        time.sleep(0.01)
         # close the modem serial connection
         modem_serial.write("<<TRANSFER END>>")
-        time.sleep(0.01);
+        time.sleep(0.01)
         modem_serial.close()
     except serial.serialutil.SerialException:
         print("ERROR: The Modem Serial port not found. Ensure modem is connected and powered on.")
