@@ -1,3 +1,4 @@
+import shutil
 import time
 import serial
 import gzip
@@ -42,14 +43,42 @@ def send_ping():
         0
     )
 
+
 def send_file_to_modem():
-    print("TEST: Send data to modem")
+    # Compress the data file first
+    compress_file()
+    # generate a hash for the file
+    gzip_data_file_hash = generate_md5()
+    # TODO: Remove after testing hash.
+    print(gzip_data_file_hash)
+    # send file to modem
+    try:
+        # open the gzip file
+        with gzip.open("message_data.txt.gz", "rb") as data_file:
+            data = data_file.read()
+        # establish connection to modem
+        modem_serial = serial.Serial("CHANGE_ME_TO_MODEM_PORT", baudrate=11520)
+        # let the modem know we are sending a file
+        modem_serial.write(data)
+        modem_serial.close()
+    except serial.serialutil.SerialException:
+        print("ERROR: The Modem Serial port not found. Ensure modem is connected and on.")
+
 
 def generate_md5():
-    pass
+    try:
+        return hashlib.md5(open("message_data.txt.gz", "rb").read()).hexdigest()
+    except FileNotFoundError:
+        print("ERROR: Message_data.txt.gz does not exist. File hash reading failed.")
+
 
 def compress_file():
-    pass
+    try:
+        data_file = open("message_data.txt", "rb")
+        with gzip.open("message_data.txt.gz", "wb") as data_file_compressed:
+            shutil.copyfileobj(data_file, data_file_compressed)
+    except FileNotFoundError:
+        print("ERROR: Message_data.txt file does not exist. Cannot create a compressed file.")
 
 # Create the connection
 #  Companion is already configured to allow script connections under the port 9000
