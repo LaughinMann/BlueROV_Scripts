@@ -9,10 +9,10 @@ qgc_ip = "localhost"
 qgc_port = 14550
 
 # Establish a connection to QGroundControl
-mavudp = mavutil.mavlink_connection("udpout:{}:{}".format(qgc_ip, qgc_port), source_system=1, source_component=1)
+qgc_conn = mavutil.mavlink_connection("udpout:{}:{}".format(qgc_ip, qgc_port), source_system=1, source_component=1)
 print("QGC_Modem_Link: Sending Data for QGroundControl on {}:{}".format(qgc_ip, qgc_port))
 
-# Continuously send HEARTBEAT and SYSTEM_STATUS message to QGroundControl
+# Continuously send a HEARTBEAT and SYSTEM_STATUS message to QGroundControl
 while True:
     # Create a MAVLink heartbeat message
     msg_heartbeat = mavutil.mavlink.MAVLink_heartbeat_message(
@@ -24,12 +24,9 @@ while True:
         mavlink_version=3
     )
 
-    # Pack heartbeat message into a byte stream format
-    msg_heartbeat.pack(mavudp.mav)
-
     print("Sending HEARTBEAT Message to QGroundControl: ", msg_heartbeat)
     # Send the message over the UDP connection to QGroundControl
-    mavudp.mav.send(msg_heartbeat)
+    qgc_conn.mav.send(msg_heartbeat)
 
     # Create a MAVLink system status message
     msg_system_status = mavutil.mavlink.MAVLink_sys_status_message(
@@ -47,12 +44,9 @@ while True:
         errors_count3=0,
         errors_count4=0)
 
-    # Pack heartbeat message into a byte stream format
-    msg_system_status.pack(mavudp.mav)
-
     print("Sending SYS_STATUS Message to QGroundControl: ", msg_system_status)
     # Send the message over the UDP connection to QgroundControl
-    mavudp.mav.send(msg_system_status)
+    qgc_conn.mav.send(msg_system_status)
 
     # Wait for a short period before sending the next set of messages to QGroundControl
     time.sleep(1)
