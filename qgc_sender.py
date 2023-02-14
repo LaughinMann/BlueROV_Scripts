@@ -9,6 +9,7 @@ qgc_ip = "localhost"
 qgc_port = 14550
 
 # Establish a connection to QGroundControl
+# Source_component is required in order for QGroundControl to detect a ROV as "Ready To Fly"
 qgc_conn = mavutil.mavlink_connection("udpout:{}:{}".format(qgc_ip, qgc_port), source_system=1, source_component=1)
 print("QGC_Modem_Link: Sending Data for QGroundControl on {}:{}".format(qgc_ip, qgc_port))
 
