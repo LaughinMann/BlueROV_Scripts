@@ -2,7 +2,7 @@ import random
 import time
 from pymavlink import mavutil
 
-TODO: Modify code to only send it when we get something from the Modem
+# TODO: Modify code to only send it when we get something from the Modem
 
 # Default ip and port for QGroundControl
 qgc_ip = "localhost"
