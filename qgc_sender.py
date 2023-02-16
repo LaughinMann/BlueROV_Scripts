@@ -2,6 +2,7 @@ import random
 import time
 from pymavlink import mavutil
 
+# TODO: Use COM26 or COM28 and decode the message and then send that message to QGroundControl
 # TODO: Modify code to only send it when we get something from the Modem
 
 # Default ip and port for QGroundControl
@@ -27,6 +28,7 @@ while True:
 
     print("Sending HEARTBEAT Message to QGroundControl: ", heartbeat_msg)
     # Send the message over the UDP connection to QGroundControl
+
     qgc_conn.mav.send(heartbeat_msg)
 
     # Create a MAVLink system status message
@@ -35,7 +37,7 @@ while True:
         onboard_control_sensors_enabled=304126991,
         onboard_control_sensors_health=321952783,
         load=434,
-        voltage_battery=random.randint(10000, 15000),
+        voltage_battery=15000,
         current_battery=46,
         battery_remaining=99,
         drop_rate_comm=0,
